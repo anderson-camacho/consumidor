@@ -9,4 +9,5 @@ GET     /                           controllers.HomeController.index()
 # Map static resources from the /public folder to the /assets URL path
 GET     /assets/*file               controllers.Assets.versioned(path="/public", file: Asset)
 GET     /users/list    controllers.UserController.getAllUsersAction
-GET     /users/find/email/:email   controllers.UserController.findUserByEmailAction(email: String)
+GET  /users/find/email/:email   controllers.UserController.findUserByEmailAction(email: String)
+

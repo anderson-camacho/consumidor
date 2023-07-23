@@ -13,6 +13,8 @@ import com.github.plokhotnyuk.jsoniter_scala.macros.stringified
 import model.{ReqResponse, UserGet}
 import requests.Response
 import play.api.libs.json.Writes
+import play.api.Logger
+
 
 @Singleton
 class UserController @Inject()(ws: WSClient, cc: ControllerComponents)(implicit ec: ExecutionContext) extends AbstractController(cc) {
@@ -60,20 +62,38 @@ class UserController @Inject()(ws: WSClient, cc: ControllerComponents)(implicit 
 
 
   // returns requested user or null if not found
-  def findUserByEmail(email: String): Option[UserGet] = {
+  def findUserByEmail(userEmail: String): Option[UserGet] = {
+    println("Email: " + userEmail)
+    println("prueba 1")
     implicit val reqResponsecodec: JsonValueCodec[ReqResponse] = JsonCodecMaker.make(CodecMakerConfig)
-
+    println("prueba 2")
     val res: Response = requests.get("https://reqres.in/api/users?page=1")
+    println("prueba 3")
     val totalPages: Int = readFromArray(res.bytes).total_pages
+    println("totalPages " + totalPages)
+    println("prueba 4")
     (1 to totalPages).flatMap { page =>
+      println("inicio clico -------------")
+      println("page " + page)
       val res: Response = requests.get(s"https://reqres.in/api/users?page=$page")
+      println("res " + res)
       val parsed_response: ReqResponse = readFromArray(res.bytes)
-      val userByEmail: Option[UserGet] = parsed_response.data.find(_.email == email)
+      println("parsed_response " + parsed_response)
+      val userEmails: List[String] = parsed_response.data.map(_.email)
+      println("parsed_response emails: " + userEmails)
+
+
+      val userByEmail: Option[UserGet] = parsed_response.data.find(_.email == userEmail)
+      println("userByEmail" + userByEmail)
       userByEmail match {
-        case None => println(s"User by email: $email NOT found on page $page")
-        case _ => println(s"User by email: $email found on page $page")
+        case None => println(s"User by email: $userEmail NOT found on page $page")
+        case _ => println(s"User by email: $userEmail found on page $page")
       }
+      println("prueba interno al ciclo -------------")
+      println("userByEmail --->" + userByEmail)
+      println("inicio clico -------------")
       userByEmail
+
     }.headOption
   }
 }
