@@ -9,6 +9,7 @@ import scala.concurrent.ExecutionContext
 import play.api.libs.json._
 import com.github.plokhotnyuk.jsoniter_scala.core.{JsonValueCodec, readFromArray}
 import com.github.plokhotnyuk.jsoniter_scala.macros.{CodecMakerConfig, JsonCodecMaker}
+import com.github.plokhotnyuk.jsoniter_scala.macros.stringified
 import model.{ReqResponse, UserGet}
 import requests.Response
 import play.api.libs.json.Writes
@@ -42,5 +43,37 @@ class UserController @Inject()(ws: WSClient, cc: ControllerComponents)(implicit 
       println(responseText)
       parsed_response.data
     }.toList
+  }
+
+  def findUserByEmailAction(email: String): Action[AnyContent] = Action { implicit request =>
+    val userByEmail: Option[UserGet] = findUserByEmail(email)
+
+    userByEmail match {
+      case Some(user) =>
+        // Devolver el usuario encontrado como JSON
+        Ok(Json.toJson(user))
+
+      case None =>
+        NotFound(s"No se encontró ningún usuario con el email: $email")
+    }
+  }
+
+
+  // returns requested user or null if not found
+  def findUserByEmail(email: String): Option[UserGet] = {
+    implicit val reqResponsecodec: JsonValueCodec[ReqResponse] = JsonCodecMaker.make(CodecMakerConfig)
+
+    val res: Response = requests.get("https://reqres.in/api/users?page=1")
+    val totalPages: Int = readFromArray(res.bytes).total_pages
+    (1 to totalPages).flatMap { page =>
+      val res: Response = requests.get(s"https://reqres.in/api/users?page=$page")
+      val parsed_response: ReqResponse = readFromArray(res.bytes)
+      val userByEmail: Option[UserGet] = parsed_response.data.find(_.email == email)
+      userByEmail match {
+        case None => println(s"User by email: $email NOT found on page $page")
+        case _ => println(s"User by email: $email found on page $page")
+      }
+      userByEmail
+    }.headOption
   }
 }
